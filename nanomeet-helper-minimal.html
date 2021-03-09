@@ -1,0 +1,114 @@
+
+<!doctype html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>nanoMeet Participant Invite</title>
+<script src="js/nanomeet.js"></script>
+</head>
+
+<body>
+	<form id="tokenForm">
+		<label for="apiId">API Key:</label>
+		<input type="text" name="apiId" id="apiId">
+		<input type="button" onClick="createNanoRoom()" value="Create Moderator Room+Token">
+        <hr>
+		<label for="tokenId">Token:</label>
+		<input type="text" name="tokenId" id="tokenId">
+		<input type="button" onClick="createNanoInvite()" value="Create Participant Token">
+	</form>
+	
+<script>
+	
+    // custom config
+	var apikey = "YOURBINTUAPUKEY";	
+	var tokenVal = "YOURROOMTOKENFROMMODERATOR";
+	var nanoMeetWebPage = "https://nanomeet.pages.nanocosmos.de/nanomeet-frontend/nanomeet-sample.html";
+
+    // Todays date (ISO Format, e.g. "2021-06-01T12:00")
+    let today = new Date().toISOString().slice(0, 16); 
+    // Default expiration 14 days from today
+    let expDate = new Date(new Date().setDate(new Date().getDate() + 14)).toISOString().slice(0, 16); 
+	
+	// Validate API Key
+    const validate = (apikey) => {
+            nanoMeet.validateAPIKey(apikey).then((success) => {
+                //displayData(success.data);
+				console.log("validation successful");
+                //document.getElementsByClassName("create-section")[0].style.display = "block";
+            }).catch((error) => {
+                //displayError(error);
+                //document.getElementsByClassName("choose-type")[0].style.display = "none";
+				console.log("error.error => '"+ error.error + "', error.message => '" + error.message + "'");
+            });
+        }
+
+	// Create nanoMeet room (requires bintu API key, for moderator/organizer, should be private)
+	const createNanoRoom = () => {
+
+			var apikey = document.getElementById("apiId").value;
+			var tv = document.getElementById("tokenId").value;
+            var roomname = "room1";
+            var moderator = true;
+
+            let setup = {
+                exp: expDate,       // expiration date 
+                nbf: today,         // not before date 
+                room: roomname,     // room name
+                moderator: moderator,    // Moderator or participant
+                server: `nanomeet-us.nanocosmos.de`,     // Server Location
+                streamname: ""      // ingest streamname: manual or set by bintu api call
+            };
+
+            var streamname, cloudDashboardLink;
+            
+            // 1. create nanoStream Cloud live streams (including ABR)
+            nanoMeet.createNanoStreams(apikey)
+                .then((success) => {
+
+                    let data = success.data;                 
+                    cloudDashboardLink = data.cloudDashboardLink // Link to access the stream informations via dashboard
+                    setup.streamname = data.streamInfo.ingest.rtmp.streamname // ingest streamname
+
+                    // 2. Create nanoMeet room with customized set up
+                    nanoMeet.createNanoMeetRoom(apikey, setup)
+                        .then((success) => {
+                            let data = success.data;
+                            console.log("Room created. Token: ", data.token);
+                            var meetingUrl = `${nanoMeetWebPage}?token=${data.token}`;
+                            console.log("meetingUrl: ", meetingUrl);
+                        }).catch((error) => {
+                            console.log(error);
+                        })
+
+                }).catch((error) => {
+                    console.log(error)
+                })
+    };
+
+    // Creates invite token for the nanoMeet room for particpants
+    // requires nanoMeet token from a moderator
+    const createNanoInvite = () => {
+        let moderator = false; //document.getElementById("moderator").checked;
+        var token = document.getElementById("tokenId").value;
+        nanoMeet.createInviteToken(token, { moderator, exp: expDate, nbf: today })
+            .then((success) => {
+                console.log("Invite token result", success.data.token);
+                //console.log(success.data);
+                var inviteUrl = `${nanoMeetWebPage}?token=${success.data.token}`;
+                console.log("Invite URL: ", inviteUrl);
+            }).catch((error) => {
+                console.error(error);
+            });
+    }
+
+	document.getElementById("apiId").value = apikey;
+	document.getElementById("tokenId").value = tokenVal;
+
+	let nanoMeet = new window.NanoMeet(); // Instance of the nanoMeet web API	
+	validate(apikey);
+
+</script>
+</body>
+</html>
+

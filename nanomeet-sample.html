@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+
+<head>
+    <title>nanoMeet Web API Sample</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,wght@0,200;0,300;0,400;0,600;0,700;0,900;1,200;1,300;1,400;1,600;1,700;1,900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="./css/nanomeet-sample.css">
+    <script src="./js/nanomeet.js"></script>
+
+</head>
+<html>
+
+<body>
+    <div class="interaction-wrapper">
+        <h1 class="header-title">nanoMeet Sample</h1>
+        <h4 class="header-title">Version 1.2.3</h4>
+        <div id="invite-token">
+            <h6>Insert invite token</h6>
+            <input class="textfield-full" type="text" id="token" placeholder="Type in token"
+                onchange="onInviteTokenChange()" />
+            <div id="init-section">
+            </div>
+            <div id="nanoMeet-width">
+                <h6>nanoMeet Width</h6>
+                <div class="button-wrapper">
+                    <button class="button" onClick="onWidthChange(300, 300)">Small</button>
+                    <button class="button" onClick="onWidthChange(1280, 720)">Large</button>
+                    <button class="button" onClick="revertChanges()">Default</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="focus">
+        <div class="nanoMeet-wrapper" id="nanoMeet-wrapper">
+            <!-- The div element the nanoMeet room will be embedded into -->
+            <div id="nanoStream-meet"></div>
+        </div>
+        <div class="setup-wrapper">
+            <div class="interaction-wrapper">
+                <div id="invite-section">
+                    <h5>Invite participant</h5>
+                    <div class="invite-wrapper">
+                        <div id="expiration-date-section">
+                            <div class="date">
+                                <label for="nbf">Not before date</label>
+                                <input type="datetime-local" id="nbf" name="not-before" value="" min="" max="">
+                            </div>
+                            <div class="date">
+                                <label for="exp">Expiration date</label>
+                                <input type="datetime-local" id="exp" name="expiration" value="" min="" max="">
+                            </div>
+                        </div>
+                        <input type="checkbox" id="moderator" name="moderator">
+                        <label class="small-label" for="moderator">is Moderator</label>
+                        <button class="button" onClick="createInviteToken()">Create Invite Token</button>
+                    </div>
+                    <div class="response-wrapper" id="invited">
+                        <h6>You created a new nanoMeet invite token:</h6>
+                        <p>Share the link below.</p>
+                        <div id="invite-link-url">Invite Link</div>
+                    </div>
+                </div>
+                <div id="invite-url-section"></div>
+                <h5>Security Options</h5>
+                <div id="lobby-section">
+                    <input type="checkbox" id="lobby" name="lobby" onclick="toggleLobby()">
+                    <label class="small-label" for="lobby">Enable Lobby</label>
+                </div>
+                <div id="password-section">
+                    <input class="textfield" type="text" id="password" placeholder="Type in password" />
+                    <div class="button-wrapper">
+                        <button class="button" onClick="changePassword()">Set password</button>
+                    </div>
+                </div>
+                <div id="broadcast-section">
+                    <h5>Broadcast Settings</h5>
+                    <input type="checkbox" id="vod" name="vod" checked>
+                    <label class="small-label" for="vod">Live Stream Recording</label>
+                    <div class="button-wrapper">
+                        <button class="button" onClick="startBroadcast()">Start Stream</button>
+                        <button class="button" onClick="stopBroadcast()">Stop Stream</button>
+                    </div>
+                    <div class="response-wrapper" id="broadcasted">
+                        <h6>You started a live stream</h6>
+                        <p>Click on the buttons below to see the live playout or vod playout.</p>
+                        <div id="live-playout-url"></div>
+                        <div id="vod-playout-url"></div>
+                    </div>
+                </div>
+                <div id="play-section"></div>
+            </div>
+        </div>
+    </div>
+    <div class="invite">
+        <div id="invite-url-section"></div>
+    </div>
+    <div class="success">
+        <p class="title">Data:</p>
+        <p>The success response of the NanoMeetWebAPI request:</p>
+        <pre id="data-property"></pre>
+    </div>
+    <div class="error">
+        <p class="title" id="error-title"></p>
+        <p>The error response of the NanoMeetWebAPI request:</p>
+        <p id="error-message"></p>
+    </div>
+    <script>
+
+        // Helper method to display fetched data
+        const displayData = (data) => {
+            document.getElementsByClassName("error")[0].style.display = 'none';
+            document.getElementsByClassName("success")[0].style.display = 'block';
+            document.getElementById("data-property").innerHTML = JSON.stringify(data, null, 4);
+        }
+
+        // Helper method to display fetched error
+        const displayError = (error) => {
+            document.getElementsByClassName("success")[0].style.display = 'none';
+            document.getElementsByClassName("error")[0].style.display = 'block';
+            document.getElementById("error-title").innerHTML = error.error;
+            document.getElementById("error-message").innerHTML = error.message;
+        }
+
+        // Initializes the nanoMeet player
+        const init = (token, id) => {
+            
+            nanoMeet.init({ token, id })
+                .then((success) => {
+                    document.getElementById("init-section").style.display = "block";
+                    if (success.data.moderator) {
+                        document.getElementsByClassName("setup-wrapper")[0].style.display = "block";
+                    }
+                    if (!success.data.moderator) {
+                        document.getElementsByClassName("setup-wrapper")[0].style.display = "none";
+                    }
+                    displayData(`Init nanoMeet. Moderator: ${success.data.moderator}`);
+                }).catch((error) => {
+                    document.getElementsByClassName("setup-wrapper")[0].style.display = "none";
+                    displayError(error);
+                });
+        }
+
+        // Destroys the nanoMeet player
+        const destroy = () => {
+            nanoMeet.destroy()
+                .then(() => {
+                    document.getElementsByClassName("nanoMeet-wrapper")[0].innerHTML = "";
+                    document.getElementsByClassName("setup-wrapper")[0].style.display = "none";
+                    displayData("Destroyed nanoMeet.");
+                }).catch((error) => {
+                    displayError(error)
+                });
+        }
+
+        // Creates invite token for the nanoMeet room
+        const createInviteToken = () => {
+            let moderator = document.getElementById("moderator").checked
+            let expDate = exp.value;
+            let nbfDate = nbf.value;
+            nanoMeet.createInviteToken(token, { moderator, exp: expDate, nbf: nbfDate })
+                .then((success) => {
+                    displayData(success.data);
+                    var inviteUrl = `https://nanomeet.pages.nanocosmos.de/nanomeet-frontend/nanomeet-sample.html?token=${success.data.token}`;
+                    document.getElementById("invited").style.display = "block";
+                    document.getElementById("invite-link-url").innerHTML = `<a class="link" href=${inviteUrl} target="_blank">${moderator ? "Moderator" : "Participant"} Invite Link</a>`;
+                    console.log("Invite token result", success.data.token);
+                }).catch((error) => {
+                    displayError(error);
+                });
+        }
+
+        // Starts the broadcast
+        const startBroadcast = () => {
+            let isVOD = document.getElementById("vod").checked;
+            nanoMeet.startBroadcast(isVOD)
+                .then((success) => {
+                    document.getElementById("broadcasted").style.display = "block";
+                    document.getElementById("live-playout-url").innerHTML = `<a class="link" href=${success.data.playback.live} target="_blank">Live Playout URL</a>`;
+
+                    if (isVOD) {
+                        document.getElementById("vod-playout-url").innerHTML = `<a class="link" href=${success.data.playback.vod} target="_blank">VOD Playout URL</a>`;
+
+                    } else {
+                        document.getElementById("vod-playout-url").innerHTML = "";
+                    }
+                    displayData(success.data);
+                }).catch((error) => {
+                    displayError(error);
+                })
+        }
+
+        // Stops the broadcast
+        const stopBroadcast = () => {
+            nanoMeet.stopBroadcast()
+                .then((success) => {
+                    displayData("Stopped stream.");
+                }).catch((error) => {
+                    displayError(error);
+                })
+        }
+
+        // Helper method to turn on/off the VOD mode
+        const toggleStreamOption = (e) => {
+            let vod = e.value === "true" ? true : false
+            isVOD = vod;
+        }
+
+        // Changes the password of the nanoMeet room
+        const changePassword = (e) => {
+            let password = document.getElementById("password").value;
+            nanoMeet.setPassword(password)
+                .then((success) => {
+                    document.getElementById("lobby").value = success.data.lobby
+                    displayData(success.data);
+                }).catch((error) => {
+                    displayError(error);
+                })
+        }
+
+        // Toggles the lobby of the nanoMeet room
+        const toggleLobby = (e) => {
+            let lobbyOn = document.getElementById("lobby").checked
+            nanoMeet.setLobby(lobbyOn)
+                .then((success) => {
+                    document.getElementById("password").value = success.data.password
+                    displayData(success.data);
+                }).catch((error) => {
+                    displayError(error);
+                })
+        }
+
+        let nanoMeetIdentifier = "nanoStream-meet" // ID of the nanoMeet div
+        let nanoMeet = new window.NanoMeet(); // Instance of the nanoMeet web API
+        var nanoMeetWrapper = document.getElementById("nanoMeet-wrapper") // The wrapper of the nanoMeet player
+        var roomUrl = "https://nanomeet.pages.nanocosmos.de/nanomeet-frontend/nanomeet-helper.html" // URL to the nanoMeet room creator 
+
+        var token = nanoMeet.getQueryVariable("token"); // Token fetched from search query
+        let tokenInput = document.getElementById("token");
+
+
+        // Set up the date selection
+        let today = new Date().toISOString().slice(0, 16); // Todays date
+        let expDate = new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().slice(0, 16); // Default 2 weeks from today
+        let maxTime = new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().slice(0, 16); // Token can't be longer valid as a year
+        var nbf = document.getElementById("nbf");
+        var exp = document.getElementById("exp");
+
+        nbf.value = today;
+        nbf.min = today;
+        nbf.max = maxTime;
+
+        exp.value = expDate;
+        exp.min = today;
+        exp.max = maxTime
+
+        if (token) {
+            tokenInput.value = token;
+            init(token, nanoMeetIdentifier);
+        }
+
+        // Helper method to update the nanoMeet player based on changed input value
+        const onInviteTokenChange = () => {
+            token = document.getElementById("token").value;
+            if (token) {
+                init(token, nanoMeetIdentifier);
+            }
+        }
+
+        // Helper method to open in new tab
+        const openInNew = (link) => {
+            window.open(link, '_target');
+        }
+
+        // Revert any changes that are made on the nanoMeet
+        const revertChanges = () => {
+            nanoMeetWrapper.style.position = "inherit";
+            nanoMeetWrapper.style.border = "none";
+            nanoMeetWrapper.style.cursor = "unset";
+            onWidthChange(800, 500);
+        }
+
+        // Helper method to change the width of nanoMeet
+        const onWidthChange = (width, height) => {
+            document.getElementById("nanoStream-meet").style.width = `${width}px`;
+            document.getElementById("nanoStream-meet").style.height = `${height}px`;
+        }
+
+    </script>
+</body>
+
+</html>

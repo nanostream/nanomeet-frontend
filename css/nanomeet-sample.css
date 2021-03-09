@@ -1,0 +1,232 @@
+* {
+    font-family: Source Sans Pro, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: #fafafa;
+}
+
+h2, h1 {
+    color: #ed7d0e;
+    font-weight: bolder;
+}
+
+h5 {
+    font-size: 18px;
+    color: #ed7d0e;
+    font-weight: 900;
+    line-height: 1.2;
+    margin-bottom: 5px;
+    padding-top: 5px;
+}
+
+h6, label {
+    font-size: 16px;
+    color: #ed7d0e;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 5px;
+    padding-top: 5px;
+}
+
+.small-label {
+    font-weight: normal;
+    color: #000;
+}
+
+p {
+    color: #909090;
+    font-weight: 300;
+    font-size: 14px;
+}
+
+.p {
+    text-decoration: none;
+    color: #fff;
+}
+
+.link {
+    color: #ed7d0e;
+}
+
+.textfield, .textfield-full {
+    font: inherit;
+    color: currentColor;
+    cursor: text;
+    max-width: 100%;
+    border: 0;
+    height: 1.1876em;
+    padding: 6px 0 7px;
+    background: none;
+    border-bottom: 1px solid #ed7d0e;
+    box-sizing: content-box;
+    letter-spacing: inherit;
+    animation-duration: 10ms;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.textfield-full {
+    width: 500px;
+}
+
+.button {
+    padding: 4px 10px;
+    font-size: 0.7544642857142857rem;
+    color: #fff;
+    background: #ed7d0e;
+    background-color: #ed7d0e;
+    box-shadow: 0px 3px 1px -2px rgba(0, 0, 0, 0.2), 0px 2px 2px 0px rgba(0, 0, 0, 0.14), 0px 1px 5px 0px rgba(0, 0, 0, 0.12);
+    min-width: 64px;
+    box-sizing: border-box;
+    transition: background-color 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms, box-shadow 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms, border 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
+    font-family: Source Sans Pro, sans-serif;
+    font-weight: 500;
+    line-height: 1.75;
+    border-radius: 4px;
+    text-transform: uppercase;
+    border: none;
+    cursor: pointer;
+    margin-left: 5px;
+}
+
+.button:hover {
+    background-color: #d66c01;
+}
+
+.interaction-wrapper {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.sections {
+    width: auto;
+    padding: 0 10px 10px 10px;
+}
+
+.focus {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    margin: 10px;
+}
+
+.nanoMeet-wrapper {
+    max-width: 100%;
+    max-height: 100%;
+}
+
+#nanoStream-meet {
+    height: 500px;
+    width: 800px;
+    max-width: 100%;
+}
+
+#nanoMeet-width h6, .button-wrapper {
+    display: inline-block;
+    margin-top: 5px;
+}
+
+#nanoMeet-width {
+    margin-top: 10px;
+}
+
+@media (min-width: 800px) {
+    .focus {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    .setup-wrapper {
+        margin-left: 10px;
+        height: 500px;
+    }
+}
+
+.checkbox {
+    margin-right: 10px;
+}
+
+.interaction-wrapper {
+    padding: 10px;
+    padding-bottom: 0;
+}
+
+.success, .error, .response-wrapper {
+    box-shadow: 0px 1px 1px -2px rgba(0, 0, 0, 0.2), 0px 2px 2px 0px rgba(0, 0, 0, 0.14), 0px 1px 5px 0px rgba(0, 0, 0, 0.12);
+    display: none;
+    text-align: left;
+    background-color: #fff;
+    margin: 10px;
+    padding: 10px;
+    border-radius: 5px;
+    overflow-x: scroll;
+}
+
+.setup-wrapper {
+    overflow: scroll;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0px 1px 1px -2px rgba(0, 0, 0, 0.2), 0px 2px 2px 0px rgba(0, 0, 0, 0.14), 0px 1px 5px 0px rgba(0, 0, 0, 0.12);
+    background-color: #fff;
+    border-radius: 5px;
+}
+
+.title, .title-helper {
+    color: #ed7d0e;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 8px;
+}
+
+.title-helper {
+    padding-bottom: 4px;
+    border-bottom: 1px solid #fafafa;
+}
+
+#error-message, #data-property {
+    color: rgba(0, 0, 0, 0.54);
+    font-size: 0.9285714285714286rem;
+    font-family: Source Sans Pro, sans-serif;
+    font-weight: 400;
+    line-height: 1.5;
+    padding-bottom: 10px;
+    overflow-wrap: anywhere;
+    padding: 5px;
+}
+
+#invite-token, .header-title {
+    margin-bottom: 10px;
+}
+
+#invite-token h6 {
+    display: inline-block;
+}
+
+#invite-token {
+    padding: 5px;
+}
+
+.choose-type {
+    text-align: center;
+}
+
+.date {
+    margin: 10px 0;
+}
+
+.init-section, .setup-wrapper, .choose-type, .create-section, .invite-section, .response-wrapper {
+    display: none;
+    padding: 5px;
+}
+
+#expiration-date-section, #room-server-section {
+    margin-top: 15px;
+}
+
+input[type=datetime-local] {
+    margin-left: 5px;
+}
