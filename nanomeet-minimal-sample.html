@@ -1,0 +1,34 @@
+</h1>nanoMeet Example</h1>
+Version 1.0
+<!-- The div element the nanoMeet room will be embedded into -->
+<div id="nanoStream-meet"></div>
+<!-- nanoMeet API -->
+<script src="js/nanomeet.js"></script>
+<script>
+
+    function initPage() {
+
+      // Instance of the nanoMeet web API
+      var nanoMeet = new NanoMeet(); 
+
+      // Your secure nanoMeet invite token
+      var token = nanoMeet.getQueryVariable("nanomeet.token") || "SECURE-TOKEN";
+
+      // embed nanoMeet on web page
+      nanoMeet.init({ token,
+                      id: "nanoStream-meet",
+                      //branding: "https://nanomeet.pages.nanocosmos.de/nanomeet-frontend/nanomeet-branding.json"
+                    })
+      .then((success) => {
+          console.log("nanoMeet running... ", success);
+      }).catch((error) => {
+          console.error("nanoMeet error: ", error);
+          alert(JSON.stringify(error));
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      initPage();
+    });
+
+</script>
