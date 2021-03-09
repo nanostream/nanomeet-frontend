@@ -1,0 +1,59 @@
+image: node:12
+
+#variables:
+#  CI_DEBUG_TRACE: "true"
+
+pages:
+  stage: deploy
+  script:
+  # keep separate builds for branches
+  - if [[ "$CI_COMMIT_REF_NAME" = "master" ]]; then
+      output="";
+    elif [[ $CI_COMMIT_TAG =~ ^release-[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+      output=release;
+    elif [[ "$CI_COMMIT_REF_NAME" = "develop" ]]; then
+      output=develop;
+    else
+      output=$CI_COMMIT_REF_SLUG;
+    fi;
+
+  - echo Public Pages URL at $CI_PAGES_URL/$output
+
+  # run the build
+  - npm install markdown-to-html -g
+  - markdown README.md --stylesheet css/vanilla.css > readme.html
+  - markdown index.md --stylesheet css/vanilla.css > index.html
+  
+  # copy to temp .public
+  - mkdir -p .public
+  - cp -r * .public/
+  
+  - folder="public/$output"
+
+  # Get older content of pages. Content is always overwritten but we want to keep older version docs.
+  # https://gitlab.com/Pro1/doxygen-cmake-sphinx/-/blob/master/.gitlab-ci.yml
+  # strategy idea from https://gitlab.com/gitlab-org/gitlab-foss/-/issues/35141#note_42991819
+  - if [ "$DELETE_OLD_PUBLIC" != 1 ]; then $(wget --no-check-certificate $CI_PAGES_URL/content.tar.gz -O prev_content.tar.gz || exit 0;); fi;
+  - '[ -s prev_content.tar.gz ] && tar -xzf prev_content.tar.gz public/ && rm -f prev_content.tar.gz'
+  #- '[ -d $folder ] && rm -rf $folder'
+  - mkdir -p $folder
+  # move all build files to the public folder
+  - cp -r .public/* $folder
+  
+
+  # leave version
+  - echo "$(date) $CI_COMMIT_REF_NAME $CI_COMMIT_TAG" > $folder/version.txt;
+  # log files
+  - find .
+  - find . > $folder/files.txt
+
+  # Create the a new tar.gz for the next run
+  - tar -zcf content.tar.gz public/
+  - mv content.tar.gz public/
+
+  #- mv images public
+  artifacts:
+    paths:
+    - public
+  #only:
+  #- master

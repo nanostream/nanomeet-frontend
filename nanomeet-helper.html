@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+
+<head>
+    <title>nanoMeet Web API Sample</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:ital,wght@0,200;0,300;0,400;0,600;0,700;0,900;1,200;1,300;1,400;1,600;1,700;1,900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="./css/nanomeet-sample.css">
+    <script src="./js/nanomeet.js"></script>
+    <script src="https://nanomeet-eu.nanocosmos.de/external_api.js"></script>
+</head>
+<html>
+
+<body>
+    <div class="interaction-wrapper">
+        <h1 class="header-title">nanoMeet Helper</h1>
+        <h4 class="header-title">Version 1.2.7</h4>
+        <p class="header-title">Copyright &copy; 2021 <a href="https://www.nanocosmos.de"></a>nanocosmos</a></p>
+        <div id="invite-token">
+            <h6>API Key</h6>
+            <p>Insert the API Key from your <a target="blank"
+                    href="https://bintu-cloud-frontend.nanocosmos.de/organisation">nanoStream Cloud/Bintu
+                    Organisation</a>.</p>
+            <input class="textfield-full" type="text" id="apikey" placeholder="Type in API Key"
+                onchange="onAPIKeyChanged()" />
+        </div>
+    </div>
+    <div class="sections">
+        <div class="create-section">
+            <div id="room-name-section">
+                <h6>nanoMeet room name</h6>
+                <p>Choose a name for your nanoMeet-room </p>
+                <input class="textfield" type="text" id="roomname" placeholder="Type in room name"
+                    onchange="onRoomNameChanged()" />
+            </div>
+            <div id="room-server-section">
+                <h6>nanoMeet geolocation</h6>
+                <p>Choose a location where you want to host your nanoMeet-room.</p>
+                <select id="server" onchange="onServerChange(this)">
+                    <option value="eu">EU</option>
+                    <option value="us">US</option>
+                </select>
+            </div>
+            <div id="expiration-date-section">
+                <h6>Expiration time frame (for nanoMeet room creation)</h6>
+                <p>Choose the time frame where the secure token should be valid.</p>
+                <div class="date">
+                    <label for="nbf">Not before date</label>
+                    <input type="datetime-local" id="nbf" name="not-before" value="" min="" max="">
+                </div>
+                <div class="date">
+                    <label for="exp">Expiration date</label>
+                    <input type="datetime-local" id="exp" name="expiration" value="" min="" max="">
+                </div>
+            </div>
+            <div class="button-wrapper">
+                <button class="button" onClick="cancel()">Cancel</button>
+                <button class="button" onClick="createNanoMeet()">Create</button>
+            </div>
+        </div>
+        <div class="response-wrapper">
+            <h6>You created a new nanoMeet room:</h6>
+            <p>Click/Copy the link below to open your nanoMeet room.</p>
+            <div id="initial-invite-link">Open nanoMeet room</div>
+            <div id="short-invite-link"></div>
+            <p>Part of it is the creation of a nanoStream Cloud live stream incl. ABR Playback.<br />
+                Click/Copy the link below to see
+                the stream overview in the nanoStream Cloud, including playout URLs and code snippet, to share with
+                larger audiences.</p>
+            <div id="full-stream-overview">nanoStream Live Stream Overview</div>
+        </div>
+    </div>
+
+    <div class="success">
+        <p class="title">Data:</p>
+        <p>The success response of the NanoMeet web API request:</p>
+        <pre id="data-property"></pre>
+    </div>
+    <div class="error">
+        <p id="error-title"></p>
+        <p>The error response of the NanoMeet web API request:</p>
+        <p id="error-message"></p>
+    </div>
+    <script>
+
+        var useShortener = true;
+
+        var dataId = document.getElementById("data-property");
+        var errorId = document.getElementsByClassName("error")[0];
+        var successId = document.getElementsByClassName("success")[0];
+        var errorTitleId = document.getElementById("error-title");
+        var errorMessageId = document.getElementById("error-message");
+
+        // Helper method to display fetched data
+        const displayData = (data) => {
+            let msg = JSON.stringify(data, null, 4);
+            console.log(msg);
+            if(dataId) dataId.innerHTML = msg;
+            if(errorId) errorId.style.display = 'none';
+            if(successId) successId.style.display = 'block';
+        }
+
+        // Helper method to display fetched error
+        const displayError = (error) => {
+            console.error(error);
+            if(successId) successId.style.display = 'none';
+            if(errorId) errorId.style.display = 'block';
+            if(errorTitleId) errorTitleId.innerHTML = error.error;
+            if(errorMessageId) errorMessageId.innerHTML = error.message;
+        }
+
+        // Validate nanoMeet/bintu API Key
+        const validate = (apikey) => {
+            nanoMeet.validateAPIKey(apikey).then((success) => {
+                displayData(success.data);
+                document.getElementsByClassName("create-section")[0].style.display = "block";
+            }).catch((error) => {
+                displayError(error);
+                document.getElementsByClassName("choose-type")[0].style.display = "none";
+            });
+        }
+
+        // Create nanoMeet room
+        const createNanoMeet = () => {
+
+            let setup = {
+                exp: exp.value,    // expiration date (ISO Format, e.g. "2021-06-01T12:00")
+                nbf: nbf.value,         // not before date 
+                room: roomname,     // Customized room name
+                moderator: true,    // Moderator or participant
+                server: `nanomeet-${server}.nanocosmos.de`,     // Server Location
+                streamname: "" // ingest streamname: manual or set by bintu api call
+            };
+            
+            var streamname, streamData, cloudDashboardLink;
+
+            // 1. create nanoStream Cloud live streams (including ABR)
+            nanoMeet.createNanoStreams(apikey)
+                .then((success) => {   
+                    let data = success.data;                 
+                    cloudDashboardLink = data.cloudDashboardLink // Link to access the stream informations via dashboard
+                    setup.streamname = data.streamInfo.ingest.rtmp.streamname // ingest streamname
+
+                    // 2. Create nanoMeet room with customized set up
+                    nanoMeet.createNanoMeetRoom(apikey, setup)
+                        .then((success) => {
+                            let data = success.data;
+                            success.data.cloudDashboardLink = cloudDashboardLink
+                            var streamOverview = cloudDashboardLink;
+
+                            displayData(success.data);
+                            document.getElementsByClassName("response-wrapper")[0].style.display = "block";
+
+                            var meetingUrl = `https://nanomeet.pages.nanocosmos.de/nanomeet-frontend/nanomeet-sample.html?token=${success.data.token}`;
+
+                            console.log("Meeting URL: ", meetingUrl);
+
+                            document.getElementById("initial-invite-link").innerHTML
+                                = `<a class="link" href=${meetingUrl} target="_blank">Open nanoMeet room</a>`;
+
+                            document.getElementById("full-stream-overview").innerHTML
+                                = `<a class="link" href=${streamOverview} target="_blank">Live stream overview</a>`;
+
+                            if(useShortener) {
+                                nanoMeet.shortenMeetingUrl(meetingUrl, `${setup.room}-${setup.streamname}`)
+                                .then((success) => {
+                                    meetingUrl = success.data;
+                                    console.log("Short meeting URL: ", meetingUrl);
+                                    document.getElementById("short-invite-link").innerHTML
+                                     = `<a class="link" href=${meetingUrl} target="_blank">(short URL)</a>`;
+                                }).catch((error) => {
+                                    displayError(error)
+                                })
+                            }
+
+                        }).catch((error) => {
+                            displayError(error);
+                        })
+
+                }).catch((error) => {
+                    console.log(error)
+                })
+        }
+
+        const cancel = () => {
+            create.checked = false;
+            existing.checked = false;
+        }
+
+        let nanoMeet = new window.NanoMeet(); // Instance of the nanoMeet web API
+        console.log("nanoMeet API Version ", nanoMeet.version);
+
+        var apikey = nanoMeet.getQueryVariable("bintu.apikey"); // API key fetched from search query
+
+        var roomname = nanoMeet.getQueryVariable("nanomeet.room"); // Room name fetched from search query
+
+        var server = nanoMeet.getQueryVariable("nanomeet.server"); // Server name fetched from search query
+
+        // Set up the date selection
+        let today = new Date().toISOString().slice(0, 16); // Todays date
+        let expDateDefault = new Date(new Date().setDate(new Date().getDate() + 14)).toISOString().slice(0, 16); // Default 2 weeks from today
+        let maxTime = new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().slice(0, 16); // Token can't be longer valid as a year
+        let nbf = document.getElementById("nbf");
+        let exp = document.getElementById("exp");
+
+        nbf.value = today;
+        nbf.min = today;
+        nbf.max = maxTime;
+
+        exp.value = expDateDefault;
+        exp.min = today;
+        exp.max = maxTime
+
+
+        // set example UI values from variables
+
+        let apikeyInput = document.getElementById("apikey");
+        let roomNameInput = document.getElementById("roomname");
+        let serverInput = document.getElementById("server");
+
+        if (apikey) {
+            apikeyInput.value = apikey;
+            validate(apikey)
+        }
+
+        if (roomname) {
+            roomNameInput.value = roomname;
+        }
+
+        if (server) {
+            serverInput.value = server;
+        } else {
+            server = "eu";
+        }
+
+        // Helper method to update the nanoMeet player based on changed input value
+        const onAPIKeyChanged = () => {
+            apikey = document.getElementById("apikey").value;
+            validate(apikey);
+        }
+
+        // Helper method to update the room name based on changed input value
+        const onRoomNameChanged = () => {
+            roomname = roomNameInput.value;
+        }
+
+        // Helper method to update the server based on changed input value
+        const onServerChange = (setServer) => {
+            console.log(setServer.value)
+            server = setServer.value;
+        }
+    </script>
+</body>
+
+</html>
